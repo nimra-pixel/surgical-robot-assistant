@@ -382,6 +382,19 @@ with tab2:
             if len(st.session_state.procedure_log) > 200:
                 st.session_state.procedure_log = st.session_state.procedure_log[-200:]
             st.session_state.vitals_history.append(dict(vitals))
+            # Auto-flag critical vitals as complications
+            if vitals["spo2"] < 92:
+                comp = f"[{phase['name']}] SpO2 dropped to {vitals['spo2']}% — CRITICAL"
+                if comp not in st.session_state.complications:
+                    st.session_state.complications.append(comp)
+            if vitals["heart_rate"] > 110:
+                comp = f"[{phase['name']}] Tachycardia — HR {vitals['heart_rate']} bpm"
+                if comp not in st.session_state.complications:
+                    st.session_state.complications.append(comp)
+            if vitals["bp_sys"] > 150:
+                comp = f"[{phase['name']}] Hypertensive episode — BP {vitals['bp_sys']}/{vitals['bp_dia']} mmHg"
+                if comp not in st.session_state.complications:
+                    st.session_state.complications.append(comp)
 
             # Advance phase based on cumulative steps
             cumulative = sum(SURGICAL_PHASES[i]["duration"] for i in range(phase_idx + 1))
@@ -487,7 +500,7 @@ with tab3:
         p1,p2,p3,p4 = st.columns(4)
         p1.metric("Final Precision",  f"{rs['precision_score']:.1f}%")
         p2.metric("Total Steps",      rs.get("total_steps",0))
-        p3.metric("Phases Done",      f"{min(st.session_state.phase_idx, len(SURGICAL_PHASES))}/{len(SURGICAL_PHASES)}")
+        p3.metric("Phases Done",      f"{min(st.session_state.phase_idx + 1, len(SURGICAL_PHASES))}/{len(SURGICAL_PHASES)}")
         p4.metric("E-Stop Triggered", "YES" if rs.get("emergency_stop") else "NO")
 
         st.divider()
