@@ -378,10 +378,14 @@ with tab2:
 
             event = f'{phase["icon"]} {phase["name"]} | Tool:{rs["tool"]} | Force:{rs["force_applied"]}N | Precision:{rs["precision_score"]:.1f}%'
             st.session_state.procedure_log.append({"step":step,"phase":phase["name"],"event":event})
+            # Cap log to last 200 entries to avoid memory bloat
+            if len(st.session_state.procedure_log) > 200:
+                st.session_state.procedure_log = st.session_state.procedure_log[-200:]
             st.session_state.vitals_history.append(dict(vitals))
 
-            steps_in_phase = phase["duration"]
-            if (step+1) % steps_in_phase == 0 and phase_idx < len(SURGICAL_PHASES)-1:
+            # Advance phase based on cumulative steps
+            cumulative = sum(SURGICAL_PHASES[i]["duration"] for i in range(phase_idx + 1))
+            if (step + 1) >= cumulative and phase_idx < len(SURGICAL_PHASES) - 1:
                 st.session_state.phase_idx += 1
 
             st.session_state.robot_state = rs
