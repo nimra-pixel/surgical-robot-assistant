@@ -382,19 +382,15 @@ with tab2:
             if len(st.session_state.procedure_log) > 200:
                 st.session_state.procedure_log = st.session_state.procedure_log[-200:]
             st.session_state.vitals_history.append(dict(vitals))
-            # Auto-flag critical vitals as complications
-            if vitals["spo2"] < 92:
-                comp = f"[{phase['name']}] SpO2 dropped to {vitals['spo2']}% — CRITICAL"
-                if comp not in st.session_state.complications:
-                    st.session_state.complications.append(comp)
-            if vitals["heart_rate"] > 110:
-                comp = f"[{phase['name']}] Tachycardia — HR {vitals['heart_rate']} bpm"
-                if comp not in st.session_state.complications:
-                    st.session_state.complications.append(comp)
-            if vitals["bp_sys"] > 150:
-                comp = f"[{phase['name']}] Hypertensive episode — BP {vitals['bp_sys']}/{vitals['bp_dia']} mmHg"
-                if comp not in st.session_state.complications:
-                    st.session_state.complications.append(comp)
+            # Auto-flag critical vitals — once per phase only
+            existing = " ".join(st.session_state.complications)
+            phase_tag = f"[{phase['name']}]"
+            if vitals["spo2"] < 92 and f"{phase_tag} SpO2" not in existing:
+                st.session_state.complications.append(f"{phase_tag} SpO2 critical: {vitals['spo2']}%")
+            if vitals["heart_rate"] > 110 and f"{phase_tag} Tachycardia" not in existing:
+                st.session_state.complications.append(f"{phase_tag} Tachycardia: HR {vitals['heart_rate']} bpm")
+            if vitals["bp_sys"] > 150 and f"{phase_tag} Hypertensive" not in existing:
+                st.session_state.complications.append(f"{phase_tag} Hypertensive episode: BP {vitals['bp_sys']}/{vitals['bp_dia']} mmHg")
 
             # Advance phase based on cumulative steps
             cumulative = sum(SURGICAL_PHASES[i]["duration"] for i in range(phase_idx + 1))
